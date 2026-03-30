@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Magaba Tuckshop POS</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Magaba Tuckshop</h1>
+  <p>Contact: +26781012096 | Powered by SkillCore</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Products</h2>
+    <div class="products" id="products"></div>
+  </section>
+
+  <section class="card cart">
+    <h2>Cart</h2>
+    <table id="cartTable">
+      <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="total" id="total">Total: $0.00</div>
+    <div class="actions">
+      <button onclick="printReceipt()">Print PDF Receipt</button>
+      <button onclick="clearCart()" style="background:#ef4444;margin-top:8px;">Clear Cart</button>
+    </div>
+  </section>
+</main>
+
+<footer>© SkillCore</footer>
+
+<script>
+  // ---- Product list (edit prices here) ----
+  const products = [
+    { id: 1, name: "Coca Cola 500ml", price: 1.50 },
+    { id: 2, name: "Bread Loaf", price: 1.20 },
+    { id: 3, name: "Milk 1L", price: 1.80 },
+    { id: 4, name: "Chips", price: 0.80 },
+    { id: 5, name: "Biscuits", price: 0.70 },
+    { id: 6, name: "Eggs (tray)", price: 3.50 }
+  ];
+
+  let cart = [];
+
+  const productsEl = document.getElementById('products');
+  const cartBody = document.querySelector('#cartTable tbody');
+  const totalEl = document.getElementById('total');
+
+  function renderProducts() {
+    productsEl.innerHTML = '';
+    products.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `<strong>${p.name}</strong><div>$${p.price.toFixed(2)}</div>
+                       <button onclick="addToCart(${p.id})">Add</button>`;
+      productsEl.appendChild(div);
+    });
+  }
+
+  function addToCart(id) {
+    const item = cart.find(i => i.id === id);
+    if (item) item.qty++;
+    else cart.push({ ...products.find(p => p.id === id), qty: 1 });
+    renderCart();
+  }
+
+  function removeFromCart(id) {
+    cart = cart.filter(i => i.id !== id);
+    renderCart();
+  }
+
+  function renderCart() {
+    cartBody.innerHTML = '';
+    let total = 0;
+    cart.forEach(i => {
+      const line = i.qty * i.price;
+      total += line;
+      cartBody.innerHTML += `<tr>
+        <td>${i.name}</td>
+        <td>${i.qty}</td>
+        <td>$${line.toFixed(2)}</td>
+        <td><button onclick="removeFromCart(${i.id})">×</button></td>
+      </tr>`;
+    });
+    totalEl.textContent = `Total: $${total.toFixed(2)}`;
+  }
+
+  function clearCart() {
+    cart = [];
+    renderCart();
+  }
+
+  function printReceipt() {
+    if (cart.length === 0) return alert('Cart is empty');
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFillColor(14, 165, 233);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text('Magaba Tuckshop', 105, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('Contact: +26781012096', 105, 24, { align: 'center' });
+
+    doc.setTextColor(31, 41, 55);
+    doc.setFontSize(12);
+    doc.text('Receipt', 14, 40);
+    doc.text(`Date: ${new Date().toLocaleString()}`, 14, 46);
+
+    // Table header
+    doc.setFontSize(11);
+    doc.text('Item', 14, 56);
+    doc.text('Qty', 100, 56);
+    doc.text('Price', 150, 56);
+    doc.line(14, 58, 196, 58);
+
+    // Items
+    let y = 64;
+    let total = 0;
+    cart.forEach(i => {
+      const line = i.qty * i.price;
+      total += line;
+      doc.text(i.name, 14, y);
+      doc.text(i.qty.toString(), 100, y);
+      doc.text(`$${line.toFixed(2)}`, 150, y);
+      y += 8;
+    });
+
+    doc.line(14, y, 196, y);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total: $${total.toFixed(2)}`, 150, y + 10);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Thank you for shopping with us!', 105, y + 25, { align: 'center' });
+    doc.text('Powered by SkillCore', 105, y + 30, { align: 'center' });
+
+    doc.save('Magaba_Tuckshop_Receipt.pdf');
+    clearCart();
+  }
+
+  renderProducts();
+</script>
+</body>
+</html>
